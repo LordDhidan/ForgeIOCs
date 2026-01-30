@@ -1,0 +1,1120 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Forge - IOC Normalizer</title>
+
+  <style>
+    :root{
+      --bg:#f6f9fc;
+      --panel:#ffffff;
+      --line:#e7eef5;
+      --muted:#6b7a90;
+      --text:#0f172a;
+      --shadow: 0 10px 30px rgba(15, 23, 42, 0.06);
+
+      --c-ip:#3b82f6;
+      --c-fqdn:#14b8a6;
+      --c-md5:#22c55e;
+      --c-sha1:#6366f1;
+      --c-sha256:#a855f7;
+      --c-sha512:#f59e0b;
+      --c-unk:#94a3b8;
+
+      --activeBg:#e9fbff;
+      --activeLine:#9be8ff;
+
+      --btn:#0f95b5;
+      --btnText:#fff;
+
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      --sans: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, "Noto Sans", "Helvetica Neue", sans-serif;
+    }
+
+    [data-theme="dark"]{
+      --bg:#05070c;
+      --panel:#0b0f18;
+      --line:#172338;
+      --muted:#9fb0c6;
+      --text:#eaf2ff;
+      --shadow: 0 18px 48px rgba(0,0,0,0.55);
+
+      --activeBg:#071a22;
+      --activeLine:#0fb7c8;
+
+      --btn:#0fb7c8;
+      --btnText:#04131a;
+    }
+
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{margin:0;font-family:var(--sans);color:var(--text);background:var(--bg);}
+    .app{display:grid;grid-template-columns:280px 1fr;height:100vh}
+
+    .sidebar{
+      background:var(--panel);
+      border-right:1px solid var(--line);
+      padding:22px 18px;
+      display:flex;
+      flex-direction:column;
+      gap:14px;
+    }
+    .brandRow{display:flex;align-items:flex-start;gap:10px;}
+    .brandBlock{display:flex;flex-direction:column;gap:8px;}
+    .brand{font-weight:900;font-size:24px;letter-spacing:.2px;line-height:1;}
+    .linkedinLink{
+      display:inline-flex;align-items:center;gap:8px;
+      font-weight:850;font-size:13px;color:var(--muted);
+      text-decoration:none;padding:8px 10px;border-radius:12px;border:1px solid transparent;width:fit-content;
+    }
+    .linkedinLink:hover{border-color:var(--line);background:rgba(255,255,255,0.04);}
+    .topicons{margin-left:auto;display:flex;gap:10px;align-items:center;color:var(--muted);}
+
+    .iconbtn{
+      width:36px;height:36px;border-radius:12px;
+      display:grid;place-items:center;border:1px solid transparent;cursor:pointer;
+      background:transparent;color:var(--muted);
+      padding:0;
+    }
+    .iconbtn:hover{background:rgba(255,255,255,0.06);border-color:var(--line);}
+
+    .nav{display:flex;flex-direction:column;gap:10px;margin-top:6px;}
+    .navItem{
+      display:flex;align-items:center;gap:12px;
+      padding:14px 14px;border-radius:12px;
+      color:var(--muted);cursor:pointer;border:1px solid transparent;
+      font-weight:800;
+    }
+    .navItem:hover{background:rgba(255,255,255,0.06)}
+    .navItem.active{
+      background:var(--activeBg);
+      border-color:var(--activeLine);
+      box-shadow:0 6px 16px rgba(22,199,192,.12);
+      color:var(--text);
+    }
+
+    .statusCard{
+      margin-top:auto;
+      background:rgba(255,255,255,0.04);
+      border:1px solid var(--line);
+      border-radius:14px;
+      padding:14px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      color:var(--muted);
+    }
+    .statusLeft{display:flex;flex-direction:column;gap:2px;font-size:12px;letter-spacing:.06em;text-transform:uppercase;}
+    .statusRow{display:flex;align-items:center;gap:10px;font-size:14px;letter-spacing:0;text-transform:none;color:var(--text);font-weight:900;}
+    .statusDot{width:10px;height:10px;border-radius:50%;background:#45d483;box-shadow:0 0 0 4px rgba(69,212,131,.15);}
+
+    .main{display:flex;flex-direction:column;min-width:0;}
+    .topbar{
+      height:64px;background:var(--panel);
+      border-bottom:1px solid var(--line);
+      display:flex;align-items:center;padding:0 24px;gap:14px;
+    }
+    .backBtn{
+      width:36px;height:36px;border-radius:12px;
+      display:grid;place-items:center;border:1px solid transparent;
+      cursor:pointer;color:var(--muted);background:transparent;padding:0;
+    }
+    .backBtn:hover{background:rgba(255,255,255,0.06);border-color:var(--line)}
+    .title{font-weight:900;font-size:18px;}
+    .subCounts{margin-left:10px;display:flex;align-items:center;gap:6px;color:var(--muted);font-size:13px;font-weight:800;}
+    .subCounts .dot{width:8px;height:8px;border-radius:50%;background:#7aa7ff;display:inline-block;opacity:.8;}
+    .topRight{margin-left:auto;display:flex;align-items:center;gap:10px;}
+    .pill{
+      display:inline-flex;align-items:center;gap:8px;
+      padding:6px 10px;border-radius:999px;font-size:12px;font-weight:950;
+      border:1px solid var(--line);background:rgba(255,255,255,0.06);color:var(--text);
+    }
+
+    .content{padding:22px 24px;overflow:auto;min-width:0;}
+
+    .pageTitle{font-size:44px;font-weight:950;margin:8px 0 6px 0;letter-spacing:-.5px;}
+    .pageDesc{color:var(--muted);font-size:16px;line-height:1.6;max-width:900px;margin-bottom:20px;font-weight:650;}
+    .inputCard{
+      background:var(--panel);border:1px solid var(--line);
+      border-radius:18px;box-shadow:var(--shadow);
+      padding:22px;max-width:980px;
+    }
+    .textbox{
+      width:100%;height:420px;border-radius:14px;
+      border:1px solid var(--line);background:rgba(255,255,255,0.04);
+      padding:20px;font-size:14px;color:var(--text);
+      outline:none;resize:none;
+      box-shadow: inset 0 0 0 2px rgba(232,244,255,.06);
+      font-family:var(--mono);
+    }
+    [data-theme="light"] .textbox{
+      background:#fbfdff;color:#38506a;
+      box-shadow: inset 0 0 0 2px rgba(232,244,255,.25);
+    }
+    .textbox::placeholder{color:rgba(155,176,201,.85)}
+    [data-theme="light"] .textbox::placeholder{color:#9fb0c3}
+
+    .inputFooter{display:flex;align-items:center;gap:14px;margin-top:18px;flex-wrap:wrap;}
+    .uploadBtn{
+      display:inline-flex;align-items:center;gap:10px;
+      padding:12px 16px;border-radius:12px;
+      border:1px solid var(--line);background:rgba(255,255,255,0.06);
+      cursor:pointer;font-weight:900;color:var(--text);
+      box-shadow: 0 8px 18px rgba(0,0,0,.18);
+    }
+    [data-theme="light"] .uploadBtn{background:#fff;color:#2a3c52;box-shadow: 0 8px 18px rgba(15,23,42,.05);}
+    .uploadHint{color:var(--muted);font-size:13px;font-weight:800;}
+    .cta{
+      margin-left:auto;
+      display:inline-flex;align-items:center;justify-content:center;gap:10px;
+      padding:14px 18px;min-width:190px;
+      border:none;border-radius:14px;background:var(--btn);
+      color:var(--btnText);font-weight:950;cursor:pointer;
+      box-shadow: 0 18px 30px rgba(15,149,181,.18);
+    }
+
+    .analysisGrid{display:grid;grid-template-columns:320px 1fr;gap:18px;min-width:0;}
+    .subnav{
+      background:var(--panel);border:1px solid var(--line);
+      border-radius:16px;padding:14px;box-shadow:var(--shadow);
+      min-height:540px;
+    }
+    .sectionTitle{
+      color:rgba(155,176,201,.9);font-size:12px;font-weight:950;
+      letter-spacing:.08em;text-transform:uppercase;
+      margin:10px 10px;
+    }
+    [data-theme="light"] .sectionTitle{color:#7c91aa}
+    .subItem{
+      display:flex;align-items:center;gap:10px;
+      padding:11px 12px;border-radius:12px;
+      color:var(--muted);cursor:pointer;border:1px solid transparent;
+      margin:4px 6px;font-weight:900;font-size:14px;
+    }
+    .subItem:hover{background:rgba(255,255,255,0.06)}
+    .subItem.active{background:rgba(255,255,255,0.06);border-color:var(--line);color:var(--text);}
+    [data-theme="light"] .subItem:hover{background:#f3f8ff}
+    [data-theme="light"] .subItem.active{background:#f2f7ff;border-color:#dbe8fb;color:#203654;}
+    .subItem .count{margin-left:auto;color:var(--muted);font-weight:950}
+
+    .dashTop{display:grid;grid-template-columns:1fr 1fr;gap:18px;align-items:stretch;margin-bottom:18px;min-width:0;}
+    .card{
+      background:var(--panel);border:1px solid var(--line);
+      border-radius:16px;box-shadow:var(--shadow);padding:18px;
+    }
+    .distTitle{font-weight:950;font-size:18px;margin-bottom:10px;}
+    .distInner{display:flex;align-items:center;justify-content:center;height:240px;flex-direction:column;gap:10px;}
+
+    .legend{
+      display:flex;justify-content:center;gap:14px;flex-wrap:wrap;
+      color:var(--muted);font-weight:900;font-size:12px;
+    }
+    .lg{display:flex;align-items:center;gap:8px;}
+    .swatch{width:12px;height:8px;border-radius:3px;background:var(--c-md5)}
+    .sw-ip{background:var(--c-ip)}
+    .sw-fqdn{background:var(--c-fqdn)}
+    .sw-md5{background:var(--c-md5)}
+    .sw-sha1{background:var(--c-sha1)}
+    .sw-sha256{background:var(--c-sha256)}
+    .sw-sha512{background:var(--c-sha512)}
+    .sw-unk{background:var(--c-unk)}
+
+    .statsGrid{display:grid;grid-template-columns:1fr 1fr;gap:14px;min-width:0;}
+    .stat{
+      border-radius:16px;box-shadow:var(--shadow);
+      padding:18px;border:1px solid var(--line);min-height:120px;background:var(--panel);
+      display:flex;flex-direction:column;justify-content:center;gap:6px;
+    }
+    .stat .num{font-weight:990;font-size:30px;letter-spacing:-.4px;}
+    .stat .lbl{color:var(--muted);font-weight:950;letter-spacing:.08em;font-size:12px;text-transform:uppercase;}
+    .stat.soft{background:rgba(255,255,255,0.04)}
+    [data-theme="light"] .stat.soft{background:#f7fbff}
+
+    .allCard{background:var(--panel);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow);overflow:hidden;}
+    .allHeader{padding:16px 18px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--line);}
+    .allHeader .h{font-weight:990;font-size:18px;}
+    .allHeader .r{font-size:12px;letter-spacing:.08em;color:var(--muted);text-transform:uppercase;font-weight:950;}
+
+    .table{width:100%;border-collapse:collapse;font-size:14px;}
+    .table tr{border-bottom:1px solid rgba(231,238,245,0.25)}
+    [data-theme="light"] .table tr{border-bottom:1px solid #f0f5fb}
+    .table td{
+      padding:14px 18px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:1px;
+      font-weight:650;
+    }
+    [data-theme="light"] .table td{color:#2b3f57}
+
+    .tag{
+      display:inline-flex;align-items:center;justify-content:center;
+      padding:6px 10px;border-radius:10px;font-weight:990;font-size:12px;
+      border:1px solid var(--line);background:rgba(255,255,255,0.06);color:var(--text);
+    }
+    [data-theme="light"] .tag{background:#f3f7ff;color:#203654;border-color:#dbe8fb}
+
+    .rawHeaderRow{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;gap:10px;flex-wrap:wrap;}
+    .rawTitle{font-weight:990;font-size:18px;}
+    .copyAll{
+      display:inline-flex;align-items:center;gap:10px;border:none;
+      padding:12px 16px;border-radius:14px;background:var(--btn);color:var(--btnText);
+      font-weight:990;cursor:pointer;box-shadow:0 16px 26px rgba(15,149,181,.22);
+    }
+    .ghostBtn{
+      display:inline-flex;align-items:center;gap:10px;
+      padding:12px 16px;border-radius:14px;border:1px solid var(--line);
+      background:rgba(255,255,255,0.06);color:var(--text);font-weight:950;cursor:pointer;
+      box-shadow: 0 8px 18px rgba(0,0,0,.18);
+    }
+    [data-theme="light"] .ghostBtn{background:#fff;color:#2a3c52;box-shadow:0 8px 18px rgba(15,23,42,.05)}
+    .outputBox{
+      background:var(--panel);
+      border:1px solid var(--line);
+      border-radius:16px;
+      box-shadow:var(--shadow);
+      padding:16px;
+    }
+    .mono{
+      font-family:var(--mono);
+      font-size:13px;
+      line-height:1.8;
+      white-space:pre-wrap;
+      word-break:break-word;
+      color:var(--text);
+      margin:0;
+    }
+
+    .donutWrap{width:200px;height:200px;position:relative;}
+    .donutCenter{
+      position:absolute;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;
+      pointer-events:none;
+    }
+    .donutCenter .big{font-weight:990;font-size:20px;}
+    .donutCenter .small{color:var(--muted);font-weight:900;font-size:12px;letter-spacing:.08em;text-transform:uppercase;}
+
+    .btnRow{display:flex;gap:10px;flex-wrap:wrap;}
+
+    .inlineField{
+      display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px;
+    }
+    .fieldLabel{
+      font-weight:900;color:var(--muted);font-size:12px;
+      letter-spacing:.08em;text-transform:uppercase;
+    }
+    .textInput{
+      min-width:280px;max-width:520px;width:100%;
+      padding:12px 14px;border-radius:14px;border:1px solid var(--line);
+      background:rgba(255,255,255,0.04);color:var(--text);outline:none;font-weight:800;
+    }
+    [data-theme="light"] .textInput{background:#fff;color:#0f172a;}
+
+    .page{display:none}
+    .page.active{display:block}
+
+    @media (max-width:1100px){
+      .app{grid-template-columns:240px 1fr}
+      .analysisGrid{grid-template-columns:1fr}
+      .dashTop{grid-template-columns:1fr}
+      .statsGrid{grid-template-columns:1fr 1fr}
+    }
+    @media (max-width:720px){
+      .app{grid-template-columns:1fr}
+      .sidebar{display:none}
+      .pageTitle{font-size:34px}
+      .statsGrid{grid-template-columns:1fr}
+      .topbar{padding:0 14px}
+      .content{padding:16px}
+    }
+  </style>
+</head>
+
+<body data-theme="dark">
+  <div class="app">
+    <aside class="sidebar">
+      <div class="brandRow">
+        <div class="brandBlock">
+          <div class="brand">Forge</div>
+          <a class="linkedinLink" href="https://linkedin.com/in/dhaidan" target="_blank" rel="noopener noreferrer">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+              <path d="M6.5 8H3.5V21H6.5V8Z"></path>
+              <path d="M5 6.7C3.9 6.7 3 5.8 3 4.7S3.9 2.7 5 2.7 7 3.6 7 4.7 6.1 6.7 5 6.7Z"></path>
+              <path d="M21 21H18V14.6C18 13.1 18 11.2 16 11.2C14 11.2 13.7 12.8 13.7 14.5V21H10.7V8H13.6V9.8H13.6C14 9.1 15.1 7.9 17.1 7.9C20.2 7.9 21 9.9 21 12.5V21Z"></path>
+            </svg>
+            <span>LinkedIn</span>
+          </a>
+        </div>
+
+        <div class="topicons">
+          <button class="iconbtn" id="themeBtn" type="button" title="Toggle theme">
+            <svg id="themeIcon" width="18" height="18" viewBox="0 0 24 24" fill="none">
+              <path d="M21 13.5A7.5 7.5 0 0 1 10.5 3a6.5 6.5 0 1 0 10.5 10.5Z" stroke="currentColor" stroke-width="2" fill="none" stroke-linejoin="round"/>
+            </svg>
+          </button>
+          <button class="iconbtn" type="button" title="Menu">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+              <path d="M4 7h16M4 12h16M4 17h16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <nav class="nav">
+        <div class="navItem active" data-nav="input">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+            <path d="M3 10.5 12 3l9 7.5V21a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1v-10.5Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+          </svg>
+          <div>Home / Input</div>
+        </div>
+
+        <div class="navItem" data-nav="analysis">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+            <path d="M4 19V5M4 19h16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            <path d="M6 15l4-6 3 4 5-8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" opacity="0.85"/>
+          </svg>
+          <div>Analysis</div>
+        </div>
+      </nav>
+
+      <div class="statusCard">
+        <div class="statusLeft"><div>Status</div>
+          <div class="statusRow"><span class="statusDot"></span><span>Ready</span></div>
+        </div>
+      </div>
+    </aside>
+
+    <section class="main">
+      <div class="topbar">
+        <button class="backBtn" id="backBtn" type="button" title="Back">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+            <path d="M15 18 9 12l6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </button>
+
+        <div class="title" id="topTitle">Input IOCs</div>
+        <div class="subCounts" id="topSub" style="display:none;">
+          <span class="dot"></span>
+          <span id="topCountText">0 Total Items</span>
+        </div>
+
+        <div class="topRight" id="topPills" style="display:none;">
+          <span class="pill" id="pillMd5">0 MD5</span>
+          <span class="pill" id="pillSha1">0 SHA1</span>
+          <span class="pill" id="pillSha256">0 SHA256</span>
+          <span class="pill" id="pillSha512">0 SHA512</span>
+        </div>
+      </div>
+
+      <div class="content">
+        <div class="page active" id="page-input">
+          <div class="pageTitle">Input IOCs</div>
+          <div class="pageDesc">
+            Paste IOCs (hashes / IPs / URLs). The tool refangs common defang patterns, classifies hashes, extracts FQDN, and generates FortiGate/Palo Alto CLI.
+          </div>
+
+          <div class="inputCard">
+            <textarea id="iocInput" class="textbox" placeholder="Examples:
+192.168.1.1
+https://example.com/path?a=1
+44d88612fea8a8f36de82e1278abb02f"></textarea>
+
+            <div class="inputFooter">
+              <label class="uploadBtn" for="fileInput">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                  <path d="M12 16V4m0 0 4 4m-4-4-4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                  <path d="M4 16v3a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-3" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                </svg>
+                Upload File
+              </label>
+              <input id="fileInput" type="file" accept=".txt,.csv" style="display:none" />
+              <div class="uploadHint">Supports .txt / .csv</div>
+
+              <button class="cta" id="startBtn" type="button">Start Analysis</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="page" id="page-analysis">
+          <div class="analysisGrid">
+            <div class="subnav">
+              <div class="subItem active" data-sub="dashboard" id="sub-dashboard">Dashboard</div>
+
+              <div class="sectionTitle" id="rawTitleHdr">Raw Lists</div>
+              <div class="subItem" data-sub="raw-ip" id="sub-ip">IP Addresses <span class="count" id="cnt-ip">(0)</span></div>
+              <div class="subItem" data-sub="raw-fqdn" id="sub-fqdn">Extracted FQDN <span class="count" id="cnt-fqdn">(0)</span></div>
+              <div class="subItem" data-sub="raw-md5" id="sub-md5">MD5 Hashes <span class="count" id="cnt-md5">(0)</span></div>
+              <div class="subItem" data-sub="raw-sha1" id="sub-sha1">SHA1 Hashes <span class="count" id="cnt-sha1">(0)</span></div>
+              <div class="subItem" data-sub="raw-sha256" id="sub-sha256">SHA256 Hashes <span class="count" id="cnt-sha256">(0)</span></div>
+              <div class="subItem" data-sub="raw-sha512" id="sub-sha512">SHA512 Hashes <span class="count" id="cnt-sha512">(0)</span></div>
+              <div class="subItem" data-sub="raw-unknown" id="sub-unknown">Unclassified <span class="count" id="cnt-unknown">(0)</span></div>
+
+              <div class="sectionTitle" id="vendorsHdr">Security Vendors</div>
+              <div class="subItem" data-sub="vendor-forti" id="sub-forti">FortiGate CLI</div>
+              <div class="subItem" data-sub="vendor-palo" id="sub-palo">Palo Alto CLI</div>
+            </div>
+
+            <div class="rightPane">
+              <div id="view-dashboard" class="view">
+                <div class="dashTop">
+                  <div class="card">
+                    <div class="distTitle">Distribution</div>
+                    <div class="distInner">
+                      <div class="donutWrap">
+                        <svg id="donutSvg" width="200" height="200" viewBox="0 0 120 120" aria-label="donut">
+                          <circle cx="60" cy="60" r="44" fill="none" stroke="rgba(231,238,245,0.25)" stroke-width="12" />
+                        </svg>
+                        <div class="donutCenter">
+                          <div class="big" id="donutTotal">0</div>
+                          <div class="small">TOTAL</div>
+                        </div>
+                      </div>
+                      <div class="legend" id="legend"></div>
+                    </div>
+                  </div>
+
+                  <div class="statsGrid" id="statsGrid"></div>
+                </div>
+
+                <div class="allCard">
+                  <div class="allHeader">
+                    <div class="h">All Items</div>
+                    <div class="r">Normalized Output</div>
+                  </div>
+                  <table class="table">
+                    <tbody id="allTbody">
+                      <tr><td style="color:var(--muted);">(no data)</td><td></td><td></td></tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              <div id="view-raw" class="view" style="display:none;">
+                <div class="rawHeaderRow">
+                  <div class="rawTitle" id="rawTitle">Raw List Output</div>
+                  <div class="btnRow">
+                    <button class="ghostBtn" id="downloadTxtBtn" type="button">Download TXT</button>
+                    <button class="copyAll" id="copyBtn" type="button">Copy All</button>
+                  </div>
+                </div>
+
+                <div class="outputBox">
+                  <pre class="mono" id="rawText">(empty)</pre>
+                </div>
+              </div>
+
+              <div id="view-vendor" class="view" style="display:none;">
+                <div class="inlineField">
+                  <div class="fieldLabel">Address Group Name</div>
+                  <input id="groupNameInput" class="textInput" type="text" value="" />
+                  <button class="ghostBtn" id="generateVendorBtn" type="button">Generate</button>
+                </div>
+
+                <div class="rawHeaderRow">
+                  <div class="rawTitle" id="vendorTitle">Vendor Output</div>
+                  <div class="btnRow">
+                    <button class="ghostBtn" id="vendorTxtBtn" type="button">Download TXT</button>
+                    <button class="copyAll" id="vendorCopyBtn" type="button">Copy All</button>
+                  </div>
+                </div>
+
+                <div class="outputBox">
+                  <pre class="mono" id="vendorText">(empty)</pre>
+                </div>
+              </div>
+
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+  </div>
+
+  <script>
+    const RX = {
+      md5: /^[a-fA-F0-9]{32}$/,
+      sha1: /^[a-fA-F0-9]{40}$/,
+      sha256: /^[a-fA-F0-9]{64}$/,
+      sha512: /^[a-fA-F0-9]{128}$/,
+      urlProto: /^https?:\/\//i,
+      domain: /^(?=.{1,253}$)(?!-)(?:[a-z0-9-]{1,63}\.)+[a-z]{2,63}$/i,
+      ipv4: /^(?:(?:25[0-5]|2[0-4]\d|1?\d?\d)\.){3}(?:25[0-5]|2[0-4]\d|1?\d?\d)$/,
+    };
+
+    const PALETTE = {
+      ip:    { label:"IP",     colorVar:"--c-ip" },
+      fqdn:  { label:"FQDN",   colorVar:"--c-fqdn" },
+      md5:   { label:"MD5",    colorVar:"--c-md5" },
+      sha1:  { label:"SHA1",   colorVar:"--c-sha1" },
+      sha256:{ label:"SHA256", colorVar:"--c-sha256" },
+      sha512:{ label:"SHA512", colorVar:"--c-sha512" },
+      unknown:{label:"UNK",    colorVar:"--c-unk" },
+    };
+
+    const State = {
+      data: { ip: [], fqdn: [], md5: [], sha1: [], sha256: [], sha512: [], unknown: [], all: [] },
+      currentView: "dashboard",
+      currentKey: null,
+      currentVendor: null,
+    };
+
+    const uniq = (arr) => Array.from(new Set(arr));
+    const cssVar = (name) => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+
+    function normalizeToken(t) {
+      let s = (t ?? "").trim();
+      s = s.replace(/^"+|"+$/g, "");
+      s = s
+        .replace(/\[\.\]|\(\.\)|\{\.\}|<\.>/g, ".")
+        .replace(/\[\s*dot\s*\]|\(\s*dot\s*\)/gi, ".");
+      s = s.replace(/^hxxps:\/\//i, "https://");
+      s = s.replace(/^hxxp:\/\//i, "http://");
+      s = s.replace(/^hxxps\[\:\]\/\//i, "https://");
+      s = s.replace(/^hxxp\[\:\]\/\//i, "http://");
+      s = s.replace(/^hxxps\(\:\)\/\//i, "https://");
+      s = s.replace(/^hxxp\(\:\)\/\//i, "http://");
+      s = s.replace(/^[\s,;]+|[\s,;]+$/g, "");
+      return s.toLowerCase();
+    }
+
+    function tokenizeInput(raw) {
+      const lines = (raw || "").split(/\r?\n/);
+      const tokens = [];
+      for (const line of lines) {
+        const trimmed = line.trim();
+        if (!trimmed) continue;
+        if (/^hxxps?:\/\//i.test(trimmed) || /^https?:\/\//i.test(trimmed)) {
+          tokens.push(trimmed);
+          continue;
+        }
+        const parts = trimmed.split(/[,\s]+/).filter(Boolean);
+        for (const p of parts) tokens.push(p);
+      }
+      return tokens.map(normalizeToken).filter(Boolean);
+    }
+
+    function extractFQDNFromURL(input) {
+      try {
+        const u = new URL(input);
+        return u.hostname?.toLowerCase() || null;
+      } catch {
+        return null;
+      }
+    }
+
+    function classifyToken(token) {
+      const t = normalizeToken(token);
+      if (!t) return null;
+
+      if (RX.urlProto.test(t)) {
+        const host = extractFQDNFromURL(t);
+        if (host) return { type: "fqdn", value: host };
+        return { type: "unknown", value: t };
+      }
+
+      if (RX.ipv4.test(t)) return { type: "ip", value: t };
+      if (RX.md5.test(t)) return { type: "md5", value: t };
+      if (RX.sha1.test(t)) return { type: "sha1", value: t };
+      if (RX.sha256.test(t)) return { type: "sha256", value: t };
+      if (RX.sha512.test(t)) return { type: "sha512", value: t };
+      if (RX.domain.test(t)) return { type: "fqdn", value: t };
+
+      return { type: "unknown", value: t };
+    }
+
+    function parseAll(raw) {
+      const tokens = tokenizeInput(raw);
+
+      const ip = [], fqdn = [], md5 = [], sha1 = [], sha256 = [], sha512 = [], unknown = [];
+      const all = [];
+
+      for (const token of tokens) {
+        const r = classifyToken(token);
+        if (!r) continue;
+
+        if (r.type === "ip") ip.push(r.value);
+        else if (r.type === "fqdn") fqdn.push(r.value);
+        else if (r.type === "md5") md5.push(r.value);
+        else if (r.type === "sha1") sha1.push(r.value);
+        else if (r.type === "sha256") sha256.push(r.value);
+        else if (r.type === "sha512") sha512.push(r.value);
+        else unknown.push(r.value);
+
+        all.push({ value: r.value, type: r.type });
+      }
+
+      const out = {
+        ip: uniq(ip),
+        fqdn: uniq(fqdn),
+        md5: uniq(md5),
+        sha1: uniq(sha1),
+        sha256: uniq(sha256),
+        sha512: uniq(sha512),
+        unknown: uniq(unknown),
+        all: []
+      };
+
+      const seen = new Set();
+      for (const item of all) {
+        const k = item.type + "|" + item.value;
+        if (seen.has(k)) continue;
+        seen.add(k);
+        out.all.push(item);
+      }
+
+      State.data = out;
+    }
+
+    function escapeHtml(s) {
+      return (s ?? "").replace(/[&<>"']/g, m => ({
+        "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"
+      }[m]));
+    }
+
+    function setActive(el, selector) {
+      document.querySelectorAll(selector).forEach(x => x.classList.remove("active"));
+      el.classList.add("active");
+    }
+
+    function showPage(page) {
+      document.querySelectorAll(".page").forEach(p => p.classList.remove("active"));
+      document.getElementById("page-" + page).classList.add("active");
+
+      const topTitle = document.getElementById("topTitle");
+      const topSub = document.getElementById("topSub");
+      const topPills = document.getElementById("topPills");
+      const backBtn = document.getElementById("backBtn");
+
+      if (page === "input") {
+        topTitle.textContent = "Input IOCs";
+        topSub.style.display = "none";
+        topPills.style.display = "none";
+        backBtn.style.visibility = "hidden";
+      } else {
+        topTitle.textContent = "Analysis Results";
+        topSub.style.display = "flex";
+        topPills.style.display = "flex";
+        backBtn.style.visibility = "visible";
+      }
+    }
+
+    function showView(kind) {
+      State.currentView = kind;
+      document.getElementById("view-dashboard").style.display = (kind === "dashboard") ? "block" : "none";
+      document.getElementById("view-raw").style.display = (kind === "raw") ? "block" : "none";
+      document.getElementById("view-vendor").style.display = (kind === "vendor") ? "block" : "none";
+    }
+
+    function visibleCategories() {
+      const d = State.data;
+      const order = ["ip","fqdn","md5","sha1","sha256","sha512","unknown"];
+      return order.map(k => ({ key:k, count:(d[k]||[]).length })).filter(x => x.count > 0);
+    }
+
+    function applyVisibility() {
+      const d = State.data;
+      const map = {
+        ip: { rowId:"sub-ip", cntId:"cnt-ip" },
+        fqdn: { rowId:"sub-fqdn", cntId:"cnt-fqdn" },
+        md5: { rowId:"sub-md5", cntId:"cnt-md5" },
+        sha1:{ rowId:"sub-sha1", cntId:"cnt-sha1" },
+        sha256:{ rowId:"sub-sha256", cntId:"cnt-sha256" },
+        sha512:{ rowId:"sub-sha512", cntId:"cnt-sha512" },
+        unknown:{ rowId:"sub-unknown", cntId:"cnt-unknown" },
+      };
+
+      for (const k of Object.keys(map)) {
+        const n = (d[k] || []).length;
+        const row = document.getElementById(map[k].rowId);
+        const cnt = document.getElementById(map[k].cntId);
+        if (cnt) cnt.textContent = `(${n})`;
+        if (row) row.style.display = (n > 0) ? "flex" : "none";
+      }
+
+      const anyRawVisible = Object.keys(map).some(k => (d[k]||[]).length > 0);
+      document.getElementById("rawTitleHdr").style.display = anyRawVisible ? "block" : "none";
+    }
+
+    function updateTopPills() {
+      const d = State.data;
+      document.getElementById("pillMd5").textContent = `${d.md5.length} MD5`;
+      document.getElementById("pillSha1").textContent = `${d.sha1.length} SHA1`;
+      document.getElementById("pillSha256").textContent = `${d.sha256.length} SHA256`;
+      document.getElementById("pillSha512").textContent = `${d.sha512.length} SHA512`;
+    }
+
+    function totalCount() {
+      const d = State.data;
+      return d.ip.length + d.fqdn.length + d.md5.length + d.sha1.length + d.sha256.length + d.sha512.length + d.unknown.length;
+    }
+
+    function updateHeaderTotal() {
+      document.getElementById("topCountText").textContent = `${totalCount()} Total Items`;
+    }
+
+    function buildStatsCards() {
+      const grid = document.getElementById("statsGrid");
+      grid.innerHTML = "";
+
+      const labelMap = {
+        ip: "IP Addresses",
+        fqdn: "Extracted FQDN",
+        md5: "MD5",
+        sha1: "SHA1",
+        sha256: "SHA256",
+        sha512: "SHA512",
+        unknown: "Unclassified"
+      };
+
+      const cats = visibleCategories();
+      for (const c of cats) {
+        const el = document.createElement("div");
+        el.className = "stat soft";
+        el.innerHTML = `<div class="num">${c.count}</div><div class="lbl">${labelMap[c.key]}</div>`;
+        grid.appendChild(el);
+      }
+
+      const totalEl = document.createElement("div");
+      totalEl.className = "stat soft";
+      totalEl.innerHTML = `<div class="num">${totalCount()}</div><div class="lbl">Total Items</div>`;
+      grid.appendChild(totalEl);
+    }
+
+    function buildLegend() {
+      const el = document.getElementById("legend");
+      el.innerHTML = "";
+      const cats = visibleCategories();
+      for (const c of cats) {
+        const pal = PALETTE[c.key];
+        const swClass = `sw-${c.key === "unknown" ? "unk" : c.key}`;
+        const item = document.createElement("div");
+        item.className = "lg";
+        item.innerHTML = `<span class="swatch ${swClass}"></span>${pal.label}`;
+        el.appendChild(item);
+      }
+    }
+
+    function buildAllTable() {
+      const tbody = document.getElementById("allTbody");
+      tbody.innerHTML = "";
+      const d = State.data;
+
+      if (!d.all.length) {
+        tbody.innerHTML = `<tr><td style="color:var(--muted);">(no data)</td><td></td><td></td></tr>`;
+        return;
+      }
+
+      for (const item of d.all) {
+        const badge = `<span class="tag">${item.type.toUpperCase()}</span>`;
+        const short = item.value.length > 42 ? (item.value.slice(0, 39) + "...") : item.value;
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${escapeHtml(item.value)}</td>
+          <td>${badge}</td>
+          <td style="text-align:right;color:var(--muted);font-weight:900;font-size:12px;">${escapeHtml(short)}</td>
+        `;
+        tbody.appendChild(tr);
+      }
+    }
+
+    function buildDonut() {
+      const svg = document.getElementById("donutSvg");
+      while (svg.children.length > 1) svg.removeChild(svg.lastChild);
+
+      const cats = visibleCategories();
+      const total = cats.reduce((a,b)=>a+b.count,0);
+      document.getElementById("donutTotal").textContent = total;
+      if (total === 0) return;
+
+      const radius = 44;
+      const circumference = 2 * Math.PI * radius;
+
+      let offset = 0;
+      for (const c of cats) {
+        const pal = PALETTE[c.key];
+        const color = cssVar(pal.colorVar);
+        const len = (c.count / total) * circumference;
+
+        const circ = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+        circ.setAttribute("cx", "60");
+        circ.setAttribute("cy", "60");
+        circ.setAttribute("r", String(radius));
+        circ.setAttribute("fill", "none");
+        circ.setAttribute("stroke", color);
+        circ.setAttribute("stroke-width", "12");
+        circ.setAttribute("stroke-linecap", "butt");
+        circ.setAttribute("transform", "rotate(-90 60 60)");
+        circ.setAttribute("stroke-dasharray", `${len} ${circumference - len}`);
+        circ.setAttribute("stroke-dashoffset", String(-offset));
+        svg.appendChild(circ);
+
+        offset += len;
+      }
+    }
+
+    function getListByKey(key) {
+      const d = State.data;
+      return d[key] || [];
+    }
+
+    function openRaw(key) {
+      State.currentKey = key;
+      showView("raw");
+      const list = getListByKey(key);
+      const titleMap = {
+        ip: "Raw List Output — IP Addresses",
+        fqdn: "Raw List Output — FQDN",
+        md5: "Raw List Output — MD5",
+        sha1: "Raw List Output — SHA1",
+        sha256: "Raw List Output — SHA256",
+        sha512: "Raw List Output — SHA512",
+        unknown: "Raw List Output — Unclassified",
+      };
+      document.getElementById("rawTitle").textContent = `${titleMap[key]} (${list.length} items)`;
+      document.getElementById("rawText").textContent = list.length ? list.join("\n") : "(empty)";
+    }
+
+    function sanitizeName(str, maxLen = 56) {
+      let s = (str || "").toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "");
+      if (!s) s = "ioc";
+      if (s.length > maxLen) s = s.slice(0, maxLen);
+      return s;
+    }
+
+    function getGroupNameStrict() {
+      const v = (document.getElementById("groupNameInput").value || "").trim();
+      return v; // must be user-provided
+    }
+
+    function buildFortiGateCLI(fqdns, ips, groupName) {
+      const group = groupName;
+      const lines = [];
+      lines.push(`config firewall address`);
+
+      for (const fqdn of fqdns) {
+        const name = `IOC_FQDN_${sanitizeName(fqdn, 40)}`;
+        lines.push(`  edit "${name}"`);
+        lines.push(`    set type fqdn`);
+        lines.push(`    set fqdn "${fqdn}"`);
+        lines.push(`  next`);
+      }
+
+      for (const ip of ips) {
+        const name = `IOC_IP_${sanitizeName(ip.replace(/\./g,"_"), 40)}`;
+        lines.push(`  edit "${name}"`);
+        lines.push(`    set subnet ${ip} 255.255.255.255`);
+        lines.push(`  next`);
+      }
+
+      lines.push(`end`);
+      lines.push(`config firewall addrgrp`);
+      lines.push(`  edit "${group}"`);
+
+      const members = [
+        ...fqdns.map(f => `"IOC_FQDN_${sanitizeName(f, 40)}"`),
+        ...ips.map(i => `"IOC_IP_${sanitizeName(i.replace(/\./g,"_"), 40)}"`)
+      ];
+      if (members.length) lines.push(`    set member ${members.join(" ")}`);
+      lines.push(`  next`);
+      lines.push(`end`);
+      return lines.join("\n");
+    }
+
+    function buildPaloAltoCLI(fqdns, ips, groupName) {
+      const group = sanitizeName(groupName, 63);
+      const lines = [];
+      lines.push(`configure`);
+      lines.push(`set address-group ${group}`);
+
+      for (const ip of ips) {
+        const name = `IOC_IP_${sanitizeName(ip.replace(/\./g,"_"), 48)}`;
+        lines.push(`set address ${name} ip-netmask ${ip}/32`);
+        lines.push(`set address-group ${group} static ${name}`);
+      }
+
+      for (const fqdn of fqdns) {
+        const name = `IOC_FQDN_${sanitizeName(fqdn, 48)}`;
+        lines.push(`set address ${name} fqdn ${fqdn}`);
+        lines.push(`set address-group ${group} static ${name}`);
+      }
+
+      lines.push(`commit`);
+      return lines.join("\n");
+    }
+
+    function openVendor(vendor) {
+      State.currentVendor = vendor;
+      showView("vendor");
+      document.getElementById("vendorTitle").textContent = vendor === "forti" ? "FortiGate CLI" : "Palo Alto CLI";
+      document.getElementById("vendorText").textContent = "(empty)";
+    }
+
+    async function copyText(text) {
+      try {
+        await navigator.clipboard.writeText(text);
+      } catch {
+        const ta = document.createElement("textarea");
+        ta.value = text;
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand("copy");
+        document.body.removeChild(ta);
+      }
+      toast("Copied ✅");
+    }
+
+    function downloadText(filename, text) {
+      const blob = new Blob([text], { type: "text/plain;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
+
+    function toast(msg) {
+      const t = document.createElement("div");
+      t.textContent = msg;
+      t.style.position = "fixed";
+      t.style.right = "16px";
+      t.style.bottom = "16px";
+      t.style.background = "rgba(15,183,200,.95)";
+      t.style.color = "#04131a";
+      t.style.fontWeight = "950";
+      t.style.padding = "12px 14px";
+      t.style.borderRadius = "14px";
+      t.style.boxShadow = "0 16px 30px rgba(0,0,0,.25)";
+      t.style.zIndex = 9999;
+      document.body.appendChild(t);
+      setTimeout(()=>{ t.remove(); }, 1200);
+    }
+
+    function runAnalysis() {
+      const raw = document.getElementById("iocInput").value || "";
+      parseAll(raw);
+
+      applyVisibility();
+      updateTopPills();
+      updateHeaderTotal();
+      buildLegend();
+      buildDonut();
+      buildStatsCards();
+      buildAllTable();
+
+      showPage("analysis");
+      showView("dashboard");
+
+      document.querySelector('.navItem[data-nav="input"]').classList.remove("active");
+      document.querySelector('.navItem[data-nav="analysis"]').classList.add("active");
+      setActive(document.getElementById("sub-dashboard"), ".subnav .subItem");
+    }
+
+    document.querySelectorAll(".navItem").forEach(el => {
+      el.addEventListener("click", () => {
+        const target = el.getAttribute("data-nav");
+        setActive(el, ".navItem");
+        if (target === "input") showPage("input");
+        else { showPage("analysis"); showView(State.currentView || "dashboard"); }
+      });
+    });
+
+    document.getElementById("backBtn").addEventListener("click", () => {
+      showPage("input");
+      setActive(document.querySelector('.navItem[data-nav="input"]'), ".navItem");
+    });
+
+    document.getElementById("startBtn").addEventListener("click", runAnalysis);
+
+    document.getElementById("fileInput").addEventListener("change", async (e) => {
+      const f = e.target.files?.[0];
+      if (!f) return;
+      const text = await f.text();
+      document.getElementById("iocInput").value = text;
+      toast("File loaded ✅");
+    });
+
+    document.querySelectorAll(".subnav .subItem").forEach(item => {
+      item.addEventListener("click", () => {
+        const sub = item.getAttribute("data-sub");
+        if (!sub) return;
+        setActive(item, ".subnav .subItem");
+
+        if (sub === "dashboard") { showView("dashboard"); return; }
+        if (sub.startsWith("raw-")) { openRaw(sub.replace("raw-", "")); return; }
+        if (sub === "vendor-forti") { openVendor("forti"); return; }
+        if (sub === "vendor-palo") { openVendor("palo"); return; }
+      });
+    });
+
+    document.getElementById("copyBtn").addEventListener("click", () => copyText(document.getElementById("rawText").textContent || ""));
+    document.getElementById("downloadTxtBtn").addEventListener("click", () => {
+      const key = State.currentKey || "output";
+      downloadText(`forge_${key}.txt`, document.getElementById("rawText").textContent || "");
+    });
+
+    document.getElementById("vendorCopyBtn").addEventListener("click", () => copyText(document.getElementById("vendorText").textContent || ""));
+    document.getElementById("vendorTxtBtn").addEventListener("click", () => {
+      const v = State.currentVendor || "vendor";
+      downloadText(`forge_${v}.txt`, document.getElementById("vendorText").textContent || "");
+    });
+
+    // Generate (only when requested)
+    document.getElementById("generateVendorBtn").addEventListener("click", () => {
+      const groupName = getGroupNameStrict();
+      if (!groupName) {
+        toast("Enter Address Group Name first.");
+        return;
+      }
+
+      const fqdns = State.data.fqdn;
+      const ips = State.data.ip;
+
+      let script = "";
+      if (State.currentVendor === "forti") {
+        script = buildFortiGateCLI(fqdns, ips, groupName);
+        document.getElementById("vendorTitle").textContent = `FortiGate CLI Script (${fqdns.length} FQDN, ${ips.length} IP)`;
+      } else if (State.currentVendor === "palo") {
+        script = buildPaloAltoCLI(fqdns, ips, groupName);
+        document.getElementById("vendorTitle").textContent = `Palo Alto CLI Script (${fqdns.length} FQDN, ${ips.length} IP)`;
+      } else {
+        toast("Select a vendor first.");
+        return;
+      }
+
+      document.getElementById("vendorText").textContent = script || "(empty)";
+      toast("Generated ✅");
+    });
+
+    // Theme toggle
+    function setTheme(theme){
+      document.body.setAttribute("data-theme", theme);
+      localStorage.setItem("forge_theme", theme);
+      updateThemeIcon(theme);
+    }
+    function updateThemeIcon(theme){
+      const icon = document.getElementById("themeIcon");
+      if(!icon) return;
+      if(theme === "dark"){
+        icon.innerHTML = `<path d="M21 13.5A7.5 7.5 0 0 1 10.5 3a6.5 6.5 0 1 0 10.5 10.5Z" stroke="currentColor" stroke-width="2" fill="none" stroke-linejoin="round"/>`;
+      } else {
+        icon.innerHTML = `
+          <path d="M12 18a6 6 0 1 0 0-12 6 6 0 0 0 0 12Z" stroke="currentColor" stroke-width="2"/>
+          <path d="M12 2v2M12 20v2M4 12H2M22 12h-2M5 5l-1-1M20 20l-1-1M19 5l1-1M5 19l-1 1" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        `;
+      }
+    }
+    document.getElementById("themeBtn").addEventListener("click", () => {
+      const current = document.body.getAttribute("data-theme") || "dark";
+      setTheme(current === "dark" ? "light" : "dark");
+    });
+
+    (function init(){
+      document.getElementById("backBtn").style.visibility = "hidden";
+      showPage("input");
+      const saved = localStorage.getItem("forge_theme") || "dark";
+      setTheme(saved);
+    })();
+  </script>
+</body>
+</html>
