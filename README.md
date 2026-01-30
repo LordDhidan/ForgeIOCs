@@ -28,7 +28,7 @@ ForgeIOC turns raw threat intelligence into clean, structured outputs in seconds
 
 ## How to Use
 
-1. Download `ForgeIOC_Final.html`
+1. Download `Forge_IOCs.html`
 2. Open it locally in your browser
 3. Paste or upload IOC data
 4. Parse and use the generated output
@@ -40,3 +40,4 @@ ForgeIOC runs fully offline. No data is sent or collected.
 ## License
 
 MIT License
+
